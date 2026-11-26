@@ -1,225 +1,123 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Un robot animado de geometrías 3D aparece sobre el marcador HIRO con AR.js.">
-<title>Robot aumentado · AR.js</title>
-<script defer src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
-<style>
-  :root { color-scheme:dark; --coal:#141816; --panel:#202624; --lime:#ffda81; --text:#f2f3e9; --muted:#b9c5b8; --line:#485248; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--coal); color:var(--text); font:1rem/1.55 system-ui,sans-serif; min-height:100vh; }
-  main { max-width:76rem; margin:auto; padding:clamp(1rem,4vw,3rem); }
-  header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; }
-  .brand { font-weight:800; display:flex; align-items:center; gap:.55rem; }
-  .signal { width:.68rem; height:.68rem; background:var(--lime); display:inline-block; border-radius:50%; box-shadow:0 0 13px #ffda8164; }
-  .workspace { display:grid; grid-template-columns:minmax(16rem,.8fr) minmax(0,1.2fr); gap:clamp(1.1rem,3.5vw,3.2rem); align-items:center; margin-top:clamp(1.5rem,4vw,4rem); }
-  h1 { font-size:clamp(3rem,6.6vw,6.4rem); line-height:.93; letter-spacing:-.075em; margin:0 0 1rem; }
-  p { margin:.55rem 0; }
-  .intro { color:var(--muted); max-width:37ch; }
-  ol { padding-left:1.4rem; margin:1.45rem 0; }
-  li { padding-left:.25rem; margin:.45rem 0; }
-  li::marker { color:var(--lime); font-family:ui-monospace,monospace; font-weight:800; }
-  .stage { min-height:clamp(20rem,55vw,33rem); position:relative; border:1px solid var(--line); border-radius:1.35rem; overflow:hidden; background:#1a2320; }
-  #preview { position:absolute; inset:0; }
-  #preview a-scene { width:100%; height:100%; }
-  .stage-label { position:absolute; z-index:1; left:1rem; bottom:1rem; background:#151c17da; border:1px solid #4a5b4a; margin:0; padding:.4rem .7rem; border-radius:.5rem; font-size:.85rem; }
-  .marker { display:flex; align-items:center; gap:.9rem; margin:1.2rem 0 0; }
-  .marker img { display:block; width:5rem; height:5rem; object-fit:contain; padding:.2rem; background:#fff; border-radius:.28rem; }
-  .marker div { display:grid; gap:.35rem; justify-items:start; }
-  a { color:var(--lime); text-underline-offset:3px; }
-  button { border:1px solid #6e7b6b; border-radius:.62rem; background:#202822; color:var(--text); padding:.58rem .88rem; font:700 .94rem system-ui,sans-serif; cursor:pointer; }
-  button.primary { background:var(--lime); color:#182113; border-color:var(--lime); }
-  button:focus-visible,a:focus-visible { outline:2px solid #fff; outline-offset:3px; }
-  #live { position:fixed; inset:0; z-index:1; pointer-events:none; }
-  #arjs-video { z-index:0!important; }
-  #live a-scene { pointer-events:none; }
-  #live-note { position:fixed; z-index:4; bottom:max(1rem,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); width:max-content; max-width:calc(100% - 2rem); padding:.62rem .9rem; background:#141816eb; border:1px solid #687667; border-radius:.62rem; }
-  #live-note[data-found] { border-color:var(--lime); color:var(--lime); }
-  .scanning { overflow:hidden; }
-  .scanning header { position:relative; z-index:3; background:#141816e8; padding:.65rem .85rem; border-radius:.7rem; }
-  .scanning .workspace { visibility:hidden; pointer-events:none; }
-  [hidden] { display:none!important; }
-  #print-sheet { display:none; }
-  @media(max-width:710px) { .workspace { grid-template-columns:1fr; } }
-  @media print {
-    @page { margin:12mm; }
-    body { background:#fff; color:#000; }
-    main,#live,#live-note,#arjs-video { display:none!important; }
-    #print-sheet { display:block; text-align:center; }
-    #print-sheet img { display:block; width:135mm; height:135mm; object-fit:contain; margin:18mm auto 6mm; }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Prepara el marcador HIRO y explora un robot animado en realidad aumentada.">
+  <title>Robot AR</title>
+  <link rel="stylesheet" href="./styles.css?v=d92271fa3b17">
+  <script defer src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script defer src="./robot.js?v=7e7662c89b7d"></script>
+  <script defer src="./app.js?v=889bcc1aabd1"></script>
 </head>
 <body>
-<main>
-  <header>
-    <div class="brand"><span class="signal" aria-hidden="true"></span> Taller de realidad aumentada</div>
-    <button class="primary" id="camera" type="button" disabled>Activar cámara</button>
-  </header>
-  <div class="workspace">
-    <section aria-labelledby="title">
-      <h1 id="title">Robot aumentado</h1>
-      <p class="intro">Encuentra el marcador HIRO para ver al robot moverse sobre tu mesa.</p>
-      <ol>
-        <li>Imprime el marcador o ábrelo en otra pantalla.</li>
-        <li>Activa la cámara y concede el permiso del navegador.</li>
-        <li>Encuadra el cuadrado completo con buena luz. Acércate despacio hasta que aparezca el robot.</li>
-      </ol>
-      <div class="marker">
-        <a href="./hiro.png" target="_blank" rel="noopener" aria-label="Abrir la imagen del marcador HIRO"><img src="./hiro.png" alt="Marcador HIRO en blanco y negro"></a>
-        <div><a href="./hiro.png" download>Descargar HIRO</a><button id="print" type="button">Imprimir marcador</button></div>
-      </div>
-    </section>
-    <div class="stage">
-      <div id="preview"></div>
-      <p class="stage-label" id="preview-status" role="status">Cargando la vista previa…</p>
+  <main class="welcome" id="welcome">
+    <header class="topbar">
+      <div class="wordmark"><span class="brand-icon" aria-hidden="true"></span> Taller de realidad aumentada</div>
+      <span class="camera-off">Cámara apagada</span>
+    </header>
+
+    <div class="workspace">
+      <section class="overview" aria-labelledby="title">
+        <h1 id="title">Robot <span>AR</span></h1>
+        <p class="intro">Prepara el marcador HIRO en tu celular y descubre un robot animado sobre tu escritorio.</p>
+        <button id="start" class="primary" type="button">Iniciar realidad aumentada <span aria-hidden="true">→</span></button>
+        <p class="notice" id="welcome-notice" role="status" hidden></p>
+
+        <section class="marker-card" aria-labelledby="marker-title">
+          <a class="marker-image" href="./hiro.png" target="_blank" rel="noopener" aria-label="Abrir el marcador HIRO en otra pestaña">
+            <img src="./hiro.png" width="2000" height="2000" alt="Marcador HIRO, con un cuadrado negro de borde grueso">
+          </a>
+          <div class="marker-copy">
+            <h2 id="marker-title">Marcador HIRO</h2>
+            <p>Muéstralo en otra pantalla o imprímelo con el margen blanco visible.</p>
+            <div class="marker-links">
+              <a href="./hiro.png" download="marcador-HIRO.png">Descargar marcador</a>
+              <a href="./hiro.png" target="_blank" rel="noopener">Abrir en otra pestaña <span aria-hidden="true">↗</span></a>
+            </div>
+            <button id="print" class="print-button" type="button">Imprimir marcador</button>
+          </div>
+        </section>
+      </section>
+
+      <figure class="preview-panel" aria-labelledby="preview-title">
+        <div class="preview-scene" id="preview"></div>
+        <figcaption class="preview-title" id="preview-title">Vista previa 3D</figcaption>
+        <p class="preview-notice" id="preview-notice" role="status">Cargando el robot…</p>
+      </figure>
     </div>
-  </div>
-</main>
-<div id="live" hidden></div>
-<p id="live-note" role="status" hidden></p>
-<section id="print-sheet"><h1>Marcador HIRO</h1><img src="./hiro.png" alt="Marcador HIRO para impresión"><p>Deja visible el borde blanco alrededor del cuadrado.</p></section>
 
-<template id="preview-scene">
-  <a-scene embedded loading-screen="enabled:false" vr-mode-ui="enabled:false" device-orientation-permission-ui="enabled:false"
-    background="color:#202b25" renderer="antialias:true; alpha:false">
-    <a-entity robot-modular position="0 -.2 0"
-      animation="property:rotation; from:0 -20 0; to:0 20 0; dur:3600; loop:true; dir:alternate; easing:easeInOutSine"></a-entity>
-    <a-plane rotation="-90 0 0" position="0 -.25 0" width="200" height="200" color="#2a3a30"></a-plane>
-    <a-entity light="type:ambient; color:#cfe5d8; intensity:1.2"></a-entity>
-    <a-entity position="3 5 2" light="type:directional; color:#fff5d1; intensity:2.1"></a-entity>
-    <a-camera position="0 1.05 3.75" rotation="-6 0 0" look-controls="enabled:false" wasd-controls="enabled:false"></a-camera>
-  </a-scene>
-</template>
-<template id="ar-scene">
-  <a-scene embedded loading-screen="enabled:false" vr-mode-ui="enabled:false" device-orientation-permission-ui="enabled:false"
-    renderer="antialias:true; alpha:true; precision:mediump"
-    arjs="sourceType:webcam; detectionMode:mono; maxDetectionRate:30; cameraParametersUrl:./camera_para.dat; debugUIEnabled:false">
-    <a-marker id="hiro-marker" type="pattern" url="./pattern-hiro.patt" emitevents="true"
-      smooth="true" smooth-count="5" smooth-tolerance="0.01" smooth-threshold="2">
-      <a-entity robot-modular scale=".72 .72 .72"></a-entity>
-    </a-marker>
-    <a-entity light="type:ambient; color:#e1e7e2; intensity:1.2"></a-entity>
-    <a-entity position="3 5 2" light="type:directional; color:#fff5d1; intensity:2.1"></a-entity>
-    <a-entity camera></a-entity>
-  </a-scene>
-</template>
-<script>
-  window.addEventListener("DOMContentLoaded",()=>{
-    const byId=(id)=>document.getElementById(id);
-    const preview=byId("preview");
-    const live=byId("live");
-    const previewStatus=byId("preview-status");
-    const note=byId("live-note");
-    const camera=byId("camera");
-    byId("print").addEventListener("click",()=>window.print());
+    <section class="instructions" aria-labelledby="instructions-title">
+      <h2 id="instructions-title">Cómo usarlo</h2>
+      <ol>
+        <li><strong>Prepara el HIRO</strong><span>Ábrelo en tu celular, otra pantalla o una hoja impresa.</span></li>
+        <li><strong>Inicia la experiencia</strong><span>Presiona el botón de inicio y permite el uso de la cámara.</span></li>
+        <li><strong>Encuadra el marcador</strong><span>Incluye el borde completo y mantén buena luz hasta ver el robot.</span></li>
+      </ol>
+    </section>
+  </main>
 
-    if (!window.AFRAME) {
-      previewStatus.textContent="No se pudo cargar A-Frame. Revisa tu conexión y recarga.";
-      return;
-    }
+  <section class="ar-view" id="ar-view" aria-labelledby="ar-title" hidden>
+    <div class="camera-feed" id="camera-feed"></div>
+    <header class="ar-toolbar">
+      <h2 id="ar-title" tabindex="-1">Robot AR</h2>
+      <div class="ar-actions">
+        <button id="fullscreen" type="button">Pantalla completa</button>
+        <button id="close" type="button">Cerrar cámara</button>
+      </div>
+    </header>
+    <div class="tracking" id="tracking" role="status" aria-live="polite" data-state="loading">
+      <span class="tracking-dot" aria-hidden="true"></span>
+      <div><strong id="tracking-title"></strong><p id="tracking-tip"></p></div>
+    </div>
+    <p class="ar-notice" id="ar-notice" role="status" hidden></p>
+  </section>
 
-    AFRAME.registerComponent("robot-modular",{
-      init() {
-        const colors={shell:"#c6ea67",edge:"#303a36",steel:"#65776f",light:"#caff71",ice:"#80f6e7"};
-        function piece(parent, tag, position, geometry, color, rotation, glow=false) {
-          const el=document.createElement("a-"+tag);
-          el.setAttribute("position",position);
-          for (const [name,value] of Object.entries(geometry)) el.setAttribute(name,value);
-          if (rotation) el.setAttribute("rotation",rotation);
-          el.setAttribute("material",glow ? "shader:flat; color:"+color : "color:"+color+"; metalness:.24; roughness:.46");
-          parent.append(el);
-          return el;
-        }
-        const box=(parent,position,width,height,depth,color,glow=false)=>piece(parent,"box",position,{width,height,depth},color,undefined,glow);
-        const sphere=(parent,position,radius,color,glow=false)=>piece(parent,"sphere",position,{radius,"segments-width":20,"segments-height":12},color,undefined,glow);
-        const joint=(parent,position)=>{
-          const el=document.createElement("a-entity");
-          el.setAttribute("position",position);
-          parent.append(el);
-          return el;
-        };
-        const body=this.el;
-        piece(body,"cylinder","0 -.016 0",{radius:.57,height:.032,"segments-radial":42},colors.edge);
-        piece(body,"ring","0 .006 0",{"radius-inner":.49,"radius-outer":.52,"segments-theta":48},colors.light,"-90 0 0",true);
-        box(body,"0 .89 0",.61,.59,.36,colors.shell);
-        box(body,"0 .52 0",.47,.19,.33,colors.edge);
-        box(body,"0 .91 .186",.43,.34,.055,colors.edge);
-        box(body,"0 .93 .221",.25,.061,.011,colors.ice,true);
-        for (const x of [-.105,0,.105]) box(body,x+" .81 .22",.065,.025,.01,colors.steel);
-        box(body,"0 1.21 0",.14,.14,.15,colors.steel);
+  <section id="print-sheet">
+    <h1>Marcador HIRO</h1>
+    <img src="./hiro.png" width="2000" height="2000" alt="Marcador HIRO para imprimir">
+    <p>Deja visible el borde blanco alrededor del cuadrado.</p>
+  </section>
 
-        const head=joint(body,"0 1.38 0");
-        box(head,"0 .055 0",.52,.37,.36,colors.shell);
-        box(head,"0 .057 .186",.43,.24,.055,colors.edge);
-        for (const x of [-.124,.124]) sphere(head,x+" .083 .221",.038,colors.ice,true);
-        box(head,"0 -.025 .218",.15,.018,.014,colors.steel);
-        piece(head,"cylinder"," .16 .296 0",{radius:.018,height:.115},colors.steel);
-        sphere(head,".16 .365 0",.040,colors.light,true);
-        head.setAttribute("animation","property:rotation; from:-6 -22 0; to:8 24 0; dur:1950; loop:true; dir:alternate; easing:easeInOutSine");
+  <template id="preview-scene">
+    <a-scene embedded loading-screen="enabled:false" xr-mode-ui="enabled:false" device-orientation-permission-ui="enabled:false"
+      background="color:#172421" fog="type:exponential; color:#172421; density:.14" renderer="antialias:true; alpha:false">
+      <a-entity robot-modular position="0 -.2 0"
+        animation="property:rotation; from:0 -20 0; to:0 20 0; dur:3600; loop:true; dir:alternate; easing:easeInOutSine"></a-entity>
+      <a-plane rotation="-90 0 0" position="0 -.25 0" width="200" height="200" color="#22382d"></a-plane>
+      <a-ring position="0 -.244 0" rotation="-90 0 0" radius-inner=".8" radius-outer=".81" color="#718c65" material="shader:flat"></a-ring>
+      <a-ring position="0 -.242 0" rotation="-90 0 0" radius-inner="1.13" radius-outer="1.14" color="#41594a" material="shader:flat"></a-ring>
+      <a-entity light="type:ambient; color:#cfe5d8; intensity:1.2"></a-entity>
+      <a-entity position="3 5 2" light="type:directional; color:#fff5d1; intensity:2.1"></a-entity>
+      <a-camera position="0 1.05 3.55" rotation="-6 0 0" fov="50" look-controls="enabled:false" wasd-controls="enabled:false"></a-camera>
+    </a-scene>
+  </template>
 
-        for (const side of [-1,1]) {
-          box(body,side*.148+" .298 0",.15,.29,.17,colors.steel);
-          box(body,side*.148+" .14 .036",.206,.11,.24,colors.edge);
-          box(body,side*.148+" .136 .155",.128,.026,.011,colors.ice,true);
-          const arm=joint(body,side*.35+" 1.04 0");
-          sphere(arm,"0 0 0",.12,colors.edge);
-          box(arm,side*.03+" -.20 0",.17,.32,.195,colors.shell);
-          sphere(arm,side*.03+" -.39 0",.091,colors.steel);
-          box(arm,side*.03+" -.46 0",.158,.13,.15,colors.edge);
-          arm.setAttribute("animation","property:rotation; from:-32 0 "+side*14+"; to:30 0 "+side*35+
-            "; dur:1150; delay:"+(side===1?0:420)+"; loop:true; dir:alternate; easing:easeInOutSine");
-        }
-      },
-    });
+  <template id="camera-head">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cámara de Robot AR</title>
+    <link rel="stylesheet" href="./styles.css?v=d92271fa3b17">
+    <script defer src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
+    <script defer src="./robot.js?v=7e7662c89b7d"></script>
+    <script defer src="./ar-session.js?v=de30148fabec"></script>
+  </template>
 
-    preview.append(byId("preview-scene").content.cloneNode(true));
-    preview.querySelector("a-scene").addEventListener("renderstart",()=>{
-      previewStatus.textContent="Vista previa del robot";
-    },{once:true});
-
-    if (!AFRAME.components["arjs-anchor"]) {
-      previewStatus.textContent="AR.js no se cargó. Recarga para usar la cámara.";
-      return;
-    }
-    camera.disabled=false;
-    let arStarted=false;
-    function setTracking(message,found=false) {
-      note.textContent=message;
-      note.toggleAttribute("data-found",found);
-    }
-    window.addEventListener("camera-init",()=>{
-      if (arStarted) setTracking("Cámara activa. Busca el marcador HIRO.");
-    });
-    window.addEventListener("camera-error",()=>{
-      if (!arStarted) return;
-      camera.textContent="Volver a intentar";
-      setTracking("No se pudo abrir la cámara. Revisa el permiso y vuelve a intentar.");
-    });
-
-    camera.addEventListener("click",()=>{
-      if (arStarted) { window.location.reload(); return; }
-      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-        previewStatus.textContent="Abre la página por HTTPS o localhost para usar la cámara.";
-        return;
-      }
-      arStarted=true;
-      camera.textContent="Terminar escaneo";
-      preview.querySelector("a-scene").pause();
-      preview.replaceChildren();
-      document.body.classList.add("scanning");
-      live.hidden=note.hidden=false;
-      setTracking("Esperando permiso de cámara…");
-      const ar=byId("ar-scene").content.cloneNode(true);
-      const marker=ar.querySelector("a-marker");
-      marker.addEventListener("markerFound",()=>setTracking("HIRO detectado. Robot anclado al marcador.",true));
-      marker.addEventListener("markerLost",()=>setTracking("Marcador fuera de vista. Vuelve a encuadrarlo."));
-      live.append(ar);
-    });
-  });
-</script>
+  <template id="camera-scene">
+    <template id="ar-scene">
+      <a-scene embedded loading-screen="enabled:false" xr-mode-ui="enabled:false" device-orientation-permission-ui="enabled:false"
+        renderer="antialias:true; alpha:true; precision:mediump"
+        arjs="sourceType:webcam; detectionMode:mono; maxDetectionRate:30; cameraParametersUrl:./camera_para.dat; debugUIEnabled:false">
+        <a-marker id="hiro-marker" type="pattern" url="./pattern-hiro.patt" emitevents="true"
+          smooth="true" smooth-count="5" smooth-tolerance="0.01" smooth-threshold="2">
+          <a-entity robot-modular scale=".72 .72 .72"></a-entity>
+        </a-marker>
+        <a-entity light="type:ambient; color:#e1e7e2; intensity:1.2"></a-entity>
+        <a-entity position="3 5 2" light="type:directional; color:#fff5d1; intensity:2.1"></a-entity>
+        <a-entity camera></a-entity>
+      </a-scene>
+    </template>
+  </template>
 </body>
 </html>
